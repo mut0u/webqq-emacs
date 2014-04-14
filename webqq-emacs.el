@@ -1,4 +1,27 @@
-;;;;; author savior
+;; -*- Emacs-Lisp -*-
+;; -*- coding: utf-8; -*-
+
+
+;;
+;; Author: savior <michael.savior@gmail.com>
+;; Keywords: webqq
+
+;; version: 0.0.1
+
+;; This file is not part of GNU Emacs.
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 (require 'url)
@@ -8,15 +31,20 @@
 (require 'pp)
 
 
-(defvar webqq-debug nil)
+(defvar webqq-debug t)
 (eval-after-load "vc" '(remove-hook 'find-file-hooks 'vc-find-file-hook))
-
+(defgroup webqq-group nil
+  "webqq group"
+  :group 'entertainment)
 
 
 ;;;; This part is webqq log tools
 
 (defconst webqq-log-buffer-name "*webqq-log-buffer*")
-(defconst webqq-log-file-name "~/Logs/my_emacs_log.log")
+(defcustom webqq-log-file-name "~/Logs/my_emacs_log.log"
+  "log file for webqq-mode"
+   :type 'string
+  :group 'douban-music)
 
 (defun emacs-log (&rest args)
   (let* ((log-buffer-name  webqq-log-buffer-name)
@@ -46,9 +74,9 @@
 (defvar webqq-account-info nil)
 
 
-(defvar webqq-referer-proxy-url "http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=3")
-(defvar webqq-user-agent  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/32.0.1700.123 Safari/537.3")
-(defvar webqq-http-header (list (cons "Referer" webqq-referer-proxy-url)
+(defconst webqq-referer-proxy-url "http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=3")
+(defconst webqq-user-agent  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/32.0.1700.123 Safari/537.3")
+(defconst webqq-http-header (list (cons "Referer" webqq-referer-proxy-url)
                                 (cons "User-Agent" webqq-user-agent)
                                         ;(cons "Host" "ssl.ptlogin2.qq.com")
                                 (cons "Connection" "Keep-Alive")
@@ -200,20 +228,27 @@ The post-data is the alist the key and the value both the string."
 
 
 
-(defvar webqq-random-size 10000000000000000)
+(defconst webqq-random-size 10000000000000000)
 
 (defvar webqq-username nil)
 (defvar webqq-password nil)
 
 
 
-(defvar webqq-project-path "/home/savior/programming/Emacs-lisp/webQQ-emacs")
-(defvar webqq-img-temp-buffer-name "webqq-tmp-img")
-(defvar webqq-verify-image-url "http://captcha.qq.com/getimage?aid=1003903&r=%s&uin=%s")
-(defvar webqq-login-channel-url "http://d.web2.qq.com/channel/login2")
+(defconst webqq-project-path "/home/savior/programming/Emacs-lisp/webQQ-emacs/resources")
 
-(defvar webqq-gateway-url "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=5&mibao_css=m_webqq&appid=1003903&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fweb2.qq.com%2Floginproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20130723001")
-(defvar webqq-check-verify-url "https://ssl.ptlogin2.qq.com/check?uin=%s&appid=1003903&js_ver=10038&r=%s&js_type=0&login_sig=%s")
+
+;(defvar webqq-base-path (file-name-directory load-file-name))
+
+
+
+
+(defvar webqq-img-temp-buffer-name "webqq-tmp-img")
+(defconst webqq-verify-image-url "http://captcha.qq.com/getimage?aid=1003903&r=%s&uin=%s")
+(defconst webqq-login-channel-url "http://d.web2.qq.com/channel/login2")
+
+(defconst webqq-gateway-url "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=5&mibao_css=m_webqq&appid=1003903&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fweb2.qq.com%2Floginproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20130723001")
+(defconst webqq-check-verify-url "https://ssl.ptlogin2.qq.com/check?uin=%s&appid=1003903&js_ver=10038&r=%s&js_type=0&login_sig=%s")
 (defvar webqq-check-verify-url-u1 "&u1=http%3A%2F%2Fweb2.qq.com%2Floginproxy.html")
 (defvar webqq-login-url "https://ssl.ptlogin2.qq.com/login?from_ui=1&t=1&u=%s&p=%s&verifycode=%s&login_sig=%s&g=1&login2qq=1&pttype=1&webqq_type=10&daid=164&dumy=&ptlang=2052&aid=1003903&h=1&js_type=0&action=4-28-1632882&remember_uin=1&mibao_css=m_webqq&js_ver=10038&fp=loginerroralert&ptredirect=0")
 (defvar webqq-login-url-u1 "&u1=http%3A%2F%2Fweb.qq.com%2Floginproxy.html%3Flogin2qq%3D1%26webqq_type%3D10")
@@ -254,7 +289,7 @@ The post-data is the alist the key and the value both the string."
 (defun encoding-password (password hvcode v2code)
   "This is the function use to encoding the password by some kind of md5."
   (let ((hex-code (replace-regexp-in-string "\\\\\\x" "" hvcode)))
-    (shell-command-to-string (format "%s/resources/encode.sh %s %s '%s'"webqq-project-path password hex-code v2code))))
+    (shell-command-to-string (format "%s/encode.sh %s %s '%s'" webqq-project-path password hex-code v2code))))
 
 (defun webqq-create-random ()
   (/ (* (random webqq-random-size) 1.0) webqq-random-size))
@@ -371,8 +406,6 @@ The post-data is the alist the key and the value both the string."
 ;;;###autoload
 (defun webqq-login2 (main-buffer)
   (setf webqq-username (read-string (format "Input your QQ username: "))) (setf webqq-password (read-passwd (format "Input your QQ password: ")))
-
-
   (setq gateway-response (webqq-login-gateway webqq-gateway-url))
   (emacs-log "login gateway and the response is : %s" gateway-response)
   (multiple-value-bind (vtype verify-code verify-hex-code) (webqq-check-verify webqq-username (webqq-session-value "loginsig"))
@@ -391,7 +424,7 @@ The post-data is the alist the key and the value both the string."
       (webqq-try-to-login pd vcode)))
   (webqq-login-channel)
   (webqq-face-sig)
-  ;(webqq-groups-init)
+                                        ;(webqq-groups-init)
   (emacs-log "login finish!!")
   (message "login finish"))
 
@@ -917,7 +950,19 @@ The post-data is the alist the key and the value both the string."
 (defconst webqq-welcome-content "Welcome to use Emacs WebQQ!\n\n这个东西目前还只是一个小玩具,欢迎大家提供意见和提交代码\n\n")
 
 
-
+(defun webqq-show-group-list ()
+  "This function is used to display the webqq group list in a buffer."
+  (interactive)
+  (with-current-buffer (get-buffer-create  webqq-group-list-buffer-name)
+    (webqq-mode)
+    (switch-to-buffer (current-buffer))
+    (erase-buffer)
+    (insert "#######################")
+    (dolist (group webqq-grouplist)
+      (insert "\n" (cdr (assoc 'name group)))
+      (make-text-button (+ 1 (- (buffer-size) (length (cdr (assoc 'name group))))) (+ 1 (buffer-size))
+                        'action (lambda (x) (webqq-create-send-msg-to-group-buffer  (button-label x)))
+                        'follow-link t))))
 
 
 (defun webqq-show-friend-list ()
@@ -925,20 +970,66 @@ The post-data is the alist the key and the value both the string."
   (interactive)
   (with-current-buffer (get-buffer-create webqq-friend-list-buffer-name)
     (webqq-mode)
-    (pp-display-expression webqq-friend-list webqq-friend-list-buffer-name)
+    (erase-buffer)
+    (insert "#####################################")
+    (dolist (category webqq-friend-list)
+      (insert "\n" (cdr (assoc 'name category)) )
+      (make-text-button (+ 1 (- (buffer-size) (length (cdr (assoc 'name category))))) (+ 1 (buffer-size))
+                        'action (lambda (x) (webqq-toggle-friend-list-in-category (button-label x)))
+                        'follow-link t)
+      (insert "(" (int-to-string (length (cdr (assoc 'users category)))) ")"))
+;    (delete-region (- (buffer-size) 1) (buffer-size))
     (emacs-log "webqq get friendlist buffer")
     (switch-to-buffer (current-buffer))))
 
 
+(defun webqq-toggle-friend-list-in-category (category)
+  (if (webqq-sublist-display-p)
+      (webqq-hidden-friend-list-in-category)
+    (webqq-show-friend-list-in-category category)))
+
+(defun webqq-show-friend-list-in-category (category)
+  (let ((lst (cdr (assoc 'users (car (member-if #'(lambda (x) (string= (cdr (assoc 'name x)) category)) webqq-friend-list))))))
+    (with-current-buffer (get-buffer webqq-friend-list-buffer-name)
+      (save-excursion
+        (end-of-line)
+        (dolist (friend lst)
+          (insert "\n  " (cdr (assoc 'nick friend)) )
+          (make-text-button (- (point) (length (cdr (assoc 'nick friend)))) (point)
+                            'action (lambda (x) (webqq-create-send-msg-to-friend-buffer (button-label x)))))))))
 
 
-(defun webqq-show-group-list ()
-  "This function is used to display the webqq group list data in a buffer."
+
+(defun webqq-create-send-msg-to-friend-buffer (nickname)
+  (with-current-buffer (get-buffer-create (concat "**" nickname "**"))
+    (switch-to-buffer (current-buffer))
+    (webqq-create-send-message-to-friend-buffer)))
+
+
+(defun webqq-create-send-msg-to-group-buffer (groupname)
+  (with-current-buffer (get-buffer-create (concat "***" groupname "***"))
+    (switch-to-buffer (current-buffer))
+    (webqq-create-send-message-to-group-buffer)))
+
+
+
+(defun webqq-sublist-display-p ()
+  (when (not (= (line-end-position) (+ 1 (buffer-size))))
+    (let ((has-next-line (and (null (next-line) )
+                              (null (beginning-of-line)))))
+      (if has-next-line
+          (let ((ret (not (button-at (point)))))
+            (previous-line)
+            ret)))))
+
+
+(defun webqq-hidden-friend-list-in-category ()
   (interactive)
-  (with-current-buffer (get-buffer-create  webqq-group-list-buffer-name)
-    (webqq-mode)
-    (pp-display-expression webqq-grouplist (current-buffer))
-    (switch-to-buffer (current-buffer))))
+  (while (webqq-sublist-display-p)
+    (next-line)
+    (delete-region (- (line-beginning-position) 1) (line-end-position)))
+  (beginning-of-line))
+
 
 
 (defun webqq-dispaly-info-on-base-buffer (msg)
@@ -1081,6 +1172,7 @@ The post-data is the alist the key and the value both the string."
          (chat-buffer (get-buffer (concat "**" nickname "**")))
          (msg (buffer-substring-no-properties 1 (+ 1 (buffer-size)))))
   (with-current-buffer chat-buffer
+    (end-of-buffer)
     (webqq-send-message-to-user uid msg)
     (insert (concat "\n============ I said: ============\n" msg))
     )
@@ -1099,10 +1191,8 @@ The post-data is the alist the key and the value both the string."
          (chat-buffer (get-buffer (concat "***" nickname "***")))
          (msg (buffer-substring-no-properties 1 (+ 1 (buffer-size)))))
   (with-current-buffer chat-buffer
-
     (webqq-send-message-to-group gid msg)
-    (insert (concat "\n============ I said: ============\n" msg))
-    )
+    (insert (concat "\n============ I said: ============\n" msg)))
   (webqq-kill-close-window)))
 
 
