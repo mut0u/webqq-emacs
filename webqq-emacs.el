@@ -194,7 +194,7 @@ The post-data is the alist the key and the value both the string."
 
 
 
-(defun webqq-get-json (url &optional url-args callback callback-args)
+(defun webqq-http-get (url &optional url-args callback callback-args)
   "get json data "
   (let ((url-request-method "GET"))
     (if url-args
@@ -407,7 +407,6 @@ The post-data is the alist the key and the value both the string."
     (if (string= "0" retcode)
         pt4-url
       (error str))))
-
 
 
 ;;;###autoload
@@ -903,6 +902,109 @@ The post-data is the alist the key and the value both the string."
               (car (cl-member gid webqq-grouplist
                               :test #'= :key #'(lambda (x) (cdr (assoc 'gid x))))))))
 
+
+
+
+
+
+
+
+
+
+
+
+(defun webqq-download-group-picture-async2 (json-data uin gid)
+"This is for back up."
+  (let* ((fid (cdr (assoc 'file_id json-data)))
+         (server (split-string (cdr (assoc 'server json-data)) ":"))
+         (rip (car server))
+         (rport (cadr server))
+         (pic (cdr (assoc 'name json-data)))))
+
+  (webqq-http-get (format webqq-group-picture-url   fid   gid pic rip rport   (int-to-string (truncate (float-time)))   "0"    uin
+                          (webqq-session-value "vfwebqq")) ))
+
+
+
+;;;;; curl  http://0.web.qstatic.com/webqqpic/style/face/47.gif
+;;; get face
+
+(defun webqq-insert-face-gif (num insert-buffer insert-point)
+  (setq gif-file-path (concat webqq-cache-path num ".gif"))
+  (if (file-exists-p gif-file-path)
+      (progn
+        (with-current-buffer (get-buffer insert-buffer)
+          (goto-char insert-point)
+          (insert-image (create-image (concat webqq-cache-path gif-file-path)))))
+    (let ((cmd (format "curl  http://0.web.qstatic.com/webqqpic/style/face/%s.gif > %s" num gif-file-path)))
+      (async-start
+       `(lambda ()
+          (set 'cmd ,cmd)
+          (concat "" (shell-command-to-string cmd)))
+
+       `(lambda (result)
+          (set 'insert-buffer ,insert-buffer)
+          (set 'insert-point ,insert-point)
+          (set 'pic ,pic)
+          (set 'webqq-cache-path ,webqq-cache-path)
+          (with-current-buffer (get-buffer insert-buffer)
+            (goto-char insert-point)
+            (insert-image (create-image gif-file-path))))))  )
+  )
+
+;;;http://web2.qq.com/cgi-bin/get_group_pic?type=0&gid=1992147231&uin=3031776395&rip=112.90.85.19&rport=8000&fid=1093865541&pic={570A5E44-6489-6296-A8C4-DE1B62A884F9}.jpg&vfwebqq=52eae313269f79c979ddea2257534298b7ee77b8b407839141c0435ff86858e95c2ec6856b129c20&t=1397571925
+;;;;;http://web2.qq.com/cgi-bin/get_group_pic?type=0&gid=1184263220&uin=3160535937&rip=112.90.85.19&rport=8000&fid=1514279477&pic={A4DB4F23-F8AC-632D-4969-32B017516077}.jpg&vfwebqq=97032231b482b984938ecc03e71c71bbdae7344127a2c6346b3e609ee514812bce425159927f2fde&t=1397580351
+
+(defconst webqq-group-picture-url "http://web2.qq.com/cgi-bin/get_group_pic?type=0&gid=%s&uin=%s&rip=%s&rport=%s&fid=%s&pic=%s&vfwebqq=%s&t=%s")
+
+(defun webqq-insert-group-picture (json-data uin gid insert-buffer insert-point)
+  (let* ((fid (cdr (assoc 'file_id json-data)))
+         (server (split-string (cdr (assoc 'server json-data)) ":"))
+         (rip (car server))
+         (rport (cadr server))
+         (pic (cdr (assoc 'name json-data)))
+         (cmd (concat (webqq-curl-shell-command (url-encode-url (format webqq-group-picture-url gid uin rip rport
+                                                         (int-to-string fid)
+                                                         pic
+                                                         (webqq-session-value "vfwebqq")
+                                                         (int-to-string (truncate (float-time)))
+                                                         ))
+                                                nil webqq-http-header webqq-cookies 'utf-8 nil)  " -L  > " webqq-cache-path pic)))
+
+    (async-start
+       `(lambda ()
+          (set 'cmd ,cmd)
+          (concat "" (shell-command-to-string cmd)))
+
+       `(lambda (result)
+          (set 'insert-buffer ,insert-buffer)
+          (set 'insert-point ,insert-point)
+          (set 'pic ,pic)
+          (set 'webqq-cache-path ,webqq-cache-path)
+          (with-current-buffer (get-buffer insert-buffer)
+            (goto-char insert-point)
+            (insert-image (create-image (concat webqq-cache-path pic))))))))
+
+
+
+
+
+
+
+
+;;;;http://d.web2.qq.com/channel/get_offpic2?file_path=%2F3310c4c8-ff46-4776-acaa-c4623ed75765&f_uin=3031776395&clientid=3822458&psessionid=8368046764001d636f6e6e7365727665725f77656271714031302e3133392e372e31363400003b75000010e2036e0400f72a827b6d0000000a4051677a6f31454b54456d0000002852eae313269f79c979ddea2257534298b7ee77b8b407839141c0435ff86858e95c2ec6856b129c20
+
+
+
+
+
+
+
+
+
+
+
+
 
 ;;;; This part is ALL the buffer command
 
@@ -1070,6 +1172,10 @@ The post-data is the alist the key and the value both the string."
       (webqq-update-group-member gid mlist)
       (webqq-show-remain-need-to-get-group-info))))
 
+
+
+
+
 (defun webqq-append-message-to-group-buffer (msg)
   (emacs-log "webqq-append message to group buffer \n" msg)
   (when (> (length msg) 0)
@@ -1085,18 +1191,27 @@ The post-data is the alist the key and the value both the string."
         (setq member-uin (match-string 1 msg))
         (setq nickname (webqq-group-name (string-to-number uin)))
         (multiple-value-bind (member-nickname) (webqq-group-member-nickname (string-to-number uin) (string-to-number member-uin))
-          (setq data (concat "\n========= " nickname " [" uin "]=========\n"
-                             member-nickname " say: "(cond ((stringp m) m)
-                                                           ((vectorp m) (json-encode m)))
-                             ""))
+          (setq data (concat "\n========= " nickname " [" uin "]=========\n" member-nickname " say: "))
           (emacs-log "This message is : %s" data)
           (when nickname
             (with-current-buffer (get-buffer-create (concat "***" nickname "***"))
               (webqq-mode)
               (end-of-buffer)
               (insert data)
+              (cond ((stringp m) (insert m))
+                    ((and (vectorp m)
+                          (= 2 (length m))
+                          (numberp (aref m 1))) (webqq-insert-face-gif (int-to-string (aref m 1)) (current-buffer) (point)))
+
+
+                    ((listp (aref m 1)) (progn (webqq-insert-group-picture (aref m 1) member-uin (webqq-find-group-code (string-to-number uin)) (current-buffer) (point))
+                                               ;(insert (json-encode m) )
+                                               )))
               ;;I do not know that why this message will be two lines in minibuffer
               (message "A message come from group %s ." nickname))))))))
+
+;;;;; curl  http://0.web.qstatic.com/webqqpic/style/face/47.gif
+;;; get face
 
 
 (defun webqq-create-send-message-to-friend-buffer ()
