@@ -41,10 +41,22 @@
 ;;;; This part is webqq log tools
 
 (defconst webqq-log-buffer-name "*webqq-log-buffer*")
-(defcustom webqq-log-file-name "~/Logs/my_emacs_log.log"
-  "log file for webqq-mode"
-   :type 'string
-  :group 'douban-music)
+(defcustom webqq-cache-path  "~/.webqq/"
+  "webqq cache path"
+  :type 'string
+  :group 'webqq-group)
+
+
+(defconst webqq-log-file-name (concat webqq-cache-path "log"))
+
+
+(defcustom webqq-login-status "online"
+  "webqq default login status"
+  :type 'string
+  :group 'webqq-group)
+
+(defconst webqq-face-image-cache-path (concat webqq-cache-path "face-cache"))
+
 
 (defun emacs-log (&rest args)
   (let* ((log-buffer-name  webqq-log-buffer-name)
@@ -233,12 +245,7 @@ The post-data is the alist the key and the value both the string."
 (defvar webqq-username nil)
 (defvar webqq-password nil)
 
-
-
-(defconst webqq-project-path "/home/savior/programming/Emacs-lisp/webQQ-emacs/resources")
-
-
-;(defvar webqq-base-path (file-name-directory load-file-name))
+(defvar webqq-base-path (file-name-directory load-file-name))
 
 
 
@@ -289,7 +296,7 @@ The post-data is the alist the key and the value both the string."
 (defun encoding-password (password hvcode v2code)
   "This is the function use to encoding the password by some kind of md5."
   (let ((hex-code (replace-regexp-in-string "\\\\\\x" "" hvcode)))
-    (shell-command-to-string (format "%s/encode.sh %s %s '%s'" webqq-project-path password hex-code v2code))))
+    (shell-command-to-string (format "%sresources/encode.sh %s %s '%s'" webqq-base-path password hex-code v2code))))
 
 (defun webqq-create-random ()
   (/ (* (random webqq-random-size) 1.0) webqq-random-size))
@@ -443,8 +450,6 @@ The post-data is the alist the key and the value both the string."
 
 
 
-
-
 ;; This part is used for send and receive message
 
 
@@ -495,24 +500,26 @@ The post-data is the alist the key and the value both the string."
                                                       webqq-http-header webqq-cookies 'utf-8 nil))))
     (webqq-get-json-success-p json)))
 
-(defun webqq-get-user-image ()
-  (switch-to-buffer (generate-new-buffer "tmp"))
-  (insert-image (create-image (webqq-curl-post webqq-user-image-url
-                                               (list (cons "uin" (int-to-string (cdr (assoc "uin" webqq-account-info))))
-                                                     (cons "vfwebqq" (webqq-session-value "vfwebqq"))
-                                                     (cons "t" (int-to-string (truncate (float-time))))
-                                                     (cons "cache" "0")
-                                                     (cons "type" "1")
-                                                     (cons "fid" "0"))
-                                               webqq-http-header
-                                               webqq-cookies
-                                               'utf-8
-                                               nil)
-                              'jpeg t)))
+(defun webqq-download-friends-face-async ()
+  (let ((lst (map #'(lambda (x) (int-to-string (cdr x))) webqq-friend-list-uin-nickname-plist)))
+    (dolist (user lst)
+      (let ((cmd (concat (webqq-curl-shell-command webqq-user-image-url
+                                                   (list (cons "uin" user)
+                                                         (cons "vfwebqq" (webqq-session-value "vfwebqq"))
+                                                         (cons "t" (int-to-string (truncate (float-time))))
+                                                         (cons "cache" "0")
+                                                         (cons "type" "1")
+                                                         (cons "fid" "0"))
+                                                   webqq-http-header
+                                                   webqq-cookies
+                                                   'utf-8
+                                                   nil) " > " webqq-face-image-cache-path "/" user ".jpg"))))
 
-
-
-
+      (async-start
+       `(lambda ()
+          (set 'cmd ,cmd)
+          (concat "" (shell-command-to-string cmd)))
+       (lambda (result) ())))))
 
 
 
@@ -819,9 +826,7 @@ The post-data is the alist the key and the value both the string."
                         (webqq-get-group-info-async-callback ret gid)
                       ;(webqq-get-group-info-async gcode)
                       )))
-              (emacs-log "return failed and the [%s]group info get result is : %s "gid retfix))))
-
-        ))))
+              (emacs-log "return failed and the [%s]group info get result is : %s "gid retfix))))))))
 
 
 (defun webqq-get-group-info-async-callback (result gid)
@@ -829,13 +834,7 @@ The post-data is the alist the key and the value both the string."
   (emacs-log "get group member for %s " gid)
   (let ((mlist (webqq-group-info-merge result)))
     (webqq-update-group-member gid mlist))
-  (emacs-log "group %s update success" gid)
- ;; (when (webqq-group-info-check-finish)
- ;;   ;(webqq-dispaly-info-on-base-buffer "begin to receive msg....")
- ;;   ;(webqq-message-buffer-refresh)
- ;;   )
-
-  )
+  (emacs-log "group %s update success" gid))
 
 (defun webqq-try-get-all-groups-member ()
   (dolist (group webqq-grouplist)
@@ -843,39 +842,6 @@ The post-data is the alist the key and the value both the string."
           (gid (cdr (assoc 'gid group))))
      (webqq-get-group-info-async code gid)))
   t)
-
-
-
-;;;;;(defun webqq-try-get-all-groups-member-tmp ()
-;;;;;  (setf webqq-remain-group-list
-;;;;;        (map 'list  #'(lambda (x)  (list (assoc 'code x) (assoc 'gid x) (assoc 'name x))) webqq-grouplist))
-;;;;;  (while webqq-remain-group-list
-;;;;;    (emacs-log "need to get group info is %s" webqq-remain-group-list)
-;;;;;    (webqq-dispaly-info-on-base-buffer (format "need to get group info is : %s" webqq-remain-group-list))
-;;;;;
-;;;;;    (do* ((l webqq-grouplist (cdr l))
-;;;;;          (group (car l)))
-;;;;;        ((null l) t)
-;;;;;      (let ((result (webqq-group-info-merge (webqq-get-group-info (cdr (assoc 'code group))))))
-;;;;;        (emacs-log "this is for debug when get data failed the result value. ==============\n%s==========\n" result)
-;;;;;        (when result
-;;;;;          (setf webqq-remain-group-list (remove-if #'(lambda (x) (= (cdr (assoc 'code group))
-;;;;;                                                                    (cdr (assoc 'code x)))) webqq-remain-group-list))
-;;;;;                                        ;          (setf group (acons 'members result group))
-;;;;;
-;;;;;
-;;;;;                                        ;(remove-if #'(lambda (x) (= 346605416 (cdr (assoc 'code x))) ) webqq-grouplist)
-;;;;;          (setf webqq-grouplist (append (remove-if #'(lambda (x) (= (cdr (assoc 'code group))
-;;;;;                                                                    (cdr (assoc 'code x)))) webqq-grouplist)
-;;;;;                                        (list (acons 'members result group))))
-;;;;;          (emacs-log "======length %s" (length webqq-remain-group-list))))))
-;;;;;  t)
-
-
-
-
-
-
 
 
 
@@ -1002,12 +968,14 @@ The post-data is the alist the key and the value both the string."
 
 (defun webqq-create-send-msg-to-friend-buffer (nickname)
   (with-current-buffer (get-buffer-create (concat "**" nickname "**"))
+    (webqq-mode)
     (switch-to-buffer (current-buffer))
     (webqq-create-send-message-to-friend-buffer)))
 
 
 (defun webqq-create-send-msg-to-group-buffer (groupname)
   (with-current-buffer (get-buffer-create (concat "***" groupname "***"))
+    (webqq-mode)
     (switch-to-buffer (current-buffer))
     (webqq-create-send-message-to-group-buffer)))
 
@@ -1220,13 +1188,16 @@ The post-data is the alist the key and the value both the string."
 
 
 (defun webqq-message-buffer-refresh ()
-
   (emacs-log "=============refresh begin=================")
   (webqq-fetch-msg-poll))
 
 
 (defun webqq-start ()
   (interactive)
+  (if (not (file-exists-p webqq-face-image-cache-path))
+      (mkdir webqq-face-image-cache-path t))
+  (if (not (file-exists-p webqq-log-file-name))
+      (shell-command (concat "touch " webqq-log-file-name)))
   (with-current-buffer (get-buffer-create webqq-base-buffer-name)
     (unless (eq major-mode 'webqq-mode)
       (webqq-mode)
@@ -1269,7 +1240,7 @@ The post-data is the alist the key and the value both the string."
         (define-key map "\C-c\C-f" 'webqq-create-send-message-to-friend-buffer)
         (define-key map "\C-c\C-g" 'webqq-create-send-message-to-group-buffer)
         (define-key map "\C-c\C-r" 'webqq-reget-group-info-with-select)
-         (define-key map "\C-c\C-n" 'webqq-show-remain-need-to-get-group-info)
+        (define-key map "\C-c\C-n" 'webqq-show-remain-need-to-get-group-info)
 
 
 

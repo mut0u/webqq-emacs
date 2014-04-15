@@ -17,25 +17,11 @@ apt-get install curl md5deep
 
 3. 项目依赖于 `json.el` `url.el` `cl.el` `pp.el` `async.el`(emacs-async)
 
-4. 为了自己调试方便, 使用了日志功能,记录了过程中的一些信息
-
-定义了这个路径存放日志文件
-
-```
-(defconst webqq-log-file-name "~/Logs/my_emacs_log.log")
-```
+4. 会下载一些临时文件,默认的保存路径是`~/.webqq/`
 
 可以自行修改代码
 
 
-5. 使用脚本`encode.sh` 来处理登录时的密码签名, 我将脚本放在了下面的文件夹中,
-
-
-```
-(defvar webqq-project-path "/home/savior/programming/Emacs-lisp/webQQ-emacs/resources")
-```
-
-使用者请根据具体情况进行修改(后期会处理调这个问题)
 
 
 
